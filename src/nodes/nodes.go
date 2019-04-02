@@ -27,6 +27,8 @@ type node struct {
 	Log          *os.File
 	FirstTime    time.Time
 	MostRecent   time.Time
+	WaitTime     string
+	MaxRetry     int
 }
 
 // First handles the first connection that is made
@@ -81,6 +83,8 @@ func First(j messages.Base) {
 		HostName:     sysInfo.HostName,
 		FirstTime:    time.Now(),
 		MostRecent:   time.Now(),
+		WaitTime:     sysInfo.WaitTime,
+		MaxRetry:     sysInfo.MaxRetry,
 	}
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]First conn with %s\r\n", time.Now(), j.ID))
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Platform: %s\r\n", time.Now(), sysInfo.Platform))
@@ -90,6 +94,8 @@ func First(j messages.Base) {
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]UserGUID: %s\r\n", time.Now(), sysInfo.UserGUID))
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]PID: %d\r\n", time.Now(), sysInfo.Pid))
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]IPs: %s\r\n", time.Now(), sysInfo.Ips))
+	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]WaitTime: %s\r\n", time.Now(), sysInfo.WaitTime))
+	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]MaxRetry: %d\r\n", time.Now(), sysInfo.MaxRetry))
 }
 
 // CheckUp will update the log
@@ -102,4 +108,22 @@ func CheckUp(j messages.Base) {
 	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Node check in\r\n", time.Now()))
 	Nodes[j.ID].MostRecent = time.Now()
 	return
+}
+
+// GetStatus will return the status of the node
+func GetStatus(id uuid.UUID) string {
+	var status string
+	dur, err := time.ParseDuration(Nodes[id].WaitTime)
+	if err != nil {
+		log.Println("warn", fmt.Sprintf("Error with conv %s to a time duration: %s", Nodes[id].WaitTime, err.Error()))
+	}
+
+	if Nodes[id].MostRecent.Add(dur).After(time.Now()) {
+		status = "Active"
+	} else if Nodes[id].MostRecent.Add(dur * time.Duration(Nodes[id].MaxRetry+1)).After(time.Now()) {
+		status = "Delayed"
+	} else {
+		status = "Dead"
+	}
+	return status
 }

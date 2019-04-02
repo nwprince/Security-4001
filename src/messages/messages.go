@@ -27,4 +27,18 @@ type SysInfo struct {
 	HostName     string   `json:"hostname,omitempty"`
 	Pid          int      `json:"pid,omitempty"`
 	Ips          []string `json:"ips,omitempty"`
+	WaitTime     string   `json:"waittime,omitempty"`
+	MaxRetry     int      `json:"maxretry,omitempty"`
+}
+
+type CmdPayload struct {
+	Command string `json:"executable"`
+	Args    string `json:"args"`
+	Job     string `json:"job"`
+}
+
+type CmdResults struct {
+	Job    string `json:"job"`
+	Stdout string `json:"stdout"`
+	Stderr string `json:"stderr"`
 }
