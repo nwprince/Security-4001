@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"messages"
@@ -24,11 +25,20 @@ type node struct {
 	HostName     string
 	Ips          []string
 	Pid          int
-	Log          *os.File
+	log          *os.File
+	channel      chan []Job
 	FirstTime    time.Time
 	MostRecent   time.Time
 	WaitTime     string
 	MaxRetry     int
+}
+
+type Job struct {
+	ID      string
+	Type    string
+	Status  string
+	Args    []string
+	Created time.Time
 }
 
 // First handles the first connection that is made
@@ -79,35 +89,47 @@ func First(j messages.Base) {
 		UserGUID:     sysInfo.UserGUID,
 		Ips:          sysInfo.Ips,
 		Pid:          sysInfo.Pid,
-		Log:          f,
+		log:          f,
+		channel:      make(chan []Job, 10),
 		HostName:     sysInfo.HostName,
 		FirstTime:    time.Now(),
 		MostRecent:   time.Now(),
 		WaitTime:     sysInfo.WaitTime,
 		MaxRetry:     sysInfo.MaxRetry,
 	}
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]First conn with %s\r\n", time.Now(), j.ID))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Platform: %s\r\n", time.Now(), sysInfo.Platform))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Arch: %s\r\n", time.Now(), sysInfo.Architecture))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]HostName: %s\r\n", time.Now(), sysInfo.HostName))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Username: %s\r\n", time.Now(), sysInfo.UserName))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]UserGUID: %s\r\n", time.Now(), sysInfo.UserGUID))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]PID: %d\r\n", time.Now(), sysInfo.Pid))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]IPs: %s\r\n", time.Now(), sysInfo.Ips))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]WaitTime: %s\r\n", time.Now(), sysInfo.WaitTime))
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]MaxRetry: %d\r\n", time.Now(), sysInfo.MaxRetry))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]First conn with %s\r\n", time.Now(), j.ID))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]Platform: %s\r\n", time.Now(), sysInfo.Platform))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]Arch: %s\r\n", time.Now(), sysInfo.Architecture))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]HostName: %s\r\n", time.Now(), sysInfo.HostName))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]Username: %s\r\n", time.Now(), sysInfo.UserName))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]UserGUID: %s\r\n", time.Now(), sysInfo.UserGUID))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]PID: %d\r\n", time.Now(), sysInfo.Pid))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]IPs: %s\r\n", time.Now(), sysInfo.Ips))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]WaitTime: %s\r\n", time.Now(), sysInfo.WaitTime))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]MaxRetry: %d\r\n", time.Now(), sysInfo.MaxRetry))
 }
 
 // CheckUp will update the log
-func CheckUp(j messages.Base) {
+func CheckUp(j messages.Base) (messages.Base, error) {
 	_, ok := Nodes[j.ID]
 	if !ok {
 		// TODO - do stuff
-		return
+		log.Panic("help")
 	}
-	Nodes[j.ID].Log.WriteString(fmt.Sprintf("[%s]Node check in\r\n", time.Now()))
+	Nodes[j.ID].log.WriteString(fmt.Sprintf("[%s]Node check in\r\n", time.Now()))
 	Nodes[j.ID].MostRecent = time.Now()
-	return
+
+	if len(Nodes[j.ID].channel) >= 1 {
+		job := <-Nodes[j.ID].channel
+
+		m, err := GetMessageForJob(j.ID, job[0])
+		return m, err
+	}
+	m := messages.Base{
+		ID:   j.ID,
+		Type: "ServerOk",
+	}
+	return m, nil
 }
 
 // GetStatus will return the status of the node
@@ -126,4 +148,67 @@ func GetStatus(id uuid.UUID) string {
 		status = "Dead"
 	}
 	return status
+}
+
+func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) {
+	isNode := false
+	for k := range Nodes {
+		if Nodes[k].ID == nodeID {
+			isNode = true
+		}
+	}
+
+	if isNode {
+		job := Job{
+			Type:    jobType,
+			Status:  "created",
+			Args:    jobArgs,
+			Created: time.Now(),
+		}
+
+		if nodeID.String() == "ffffffff-ffff-ffff-ffff-ffffffffffff" {
+
+			for k := range Nodes {
+				s := Nodes[k].channel
+				id, _ := uuid.NewV4()
+				job.ID = id.String()
+				s <- []Job{job}
+				Nodes[k].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+			}
+			return job.ID, nil
+		}
+
+		id, _ := uuid.NewV4()
+		job.ID = id.String()
+		s := Nodes[nodeID].channel
+		s <- []Job{job}
+		Nodes[nodeID].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+		return job.ID, nil
+	}
+	return "", errors.New("bad id")
+}
+
+func GetMessageForJob(nodeID uuid.UUID, job Job) (messages.Base, error) {
+	m := messages.Base{
+		ID: nodeID,
+	}
+	switch job.Type {
+	case "cmd":
+		m.Type = "CmdPayload"
+		p := messages.CmdPayload{
+			Command: job.Args[0],
+			Job:     job.ID,
+		}
+
+		k := marshalMessage(p)
+		m.Payload = (*json.RawMessage)(&k)
+
+	}
+
+	return m, nil
+}
+
+func marshalMessage(m interface{}) []byte {
+	k, _ := json.Marshal(m)
+	return k
 }

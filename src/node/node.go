@@ -97,7 +97,7 @@ func (n *node) Run(server string) {
 
 	for {
 		if n.initial {
-			go n.firstRun(server)
+			go n.checkIn(server)
 		} else {
 			n.initial = n.firstRun(server)
 		}
@@ -157,6 +157,7 @@ func (n *node) firstRun(host string) bool {
 }
 
 func (n *node) checkIn(host string) {
+	fmt.Println("Checking in!")
 	msg := messages.Base{
 		ID:   n.ID,
 		Type: "status",
