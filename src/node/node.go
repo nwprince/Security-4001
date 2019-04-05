@@ -41,10 +41,6 @@ type node struct {
 	initial      bool
 }
 
-func main() {
-	fmt.Println("here")
-}
-
 func New() node {
 	u, err := uuid.NewV4()
 	if err != nil {
@@ -58,7 +54,7 @@ func New() node {
 		UserAgent:    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.85 Safari/537.36",
 		initial:      false,
 		Client:       &http.Client{},
-		WaitTime:     30000 * time.Millisecond,
+		WaitTime:     1000 * time.Millisecond,
 		MaxRetry:     7,
 	}
 
@@ -157,7 +153,6 @@ func (n *node) firstRun(host string) bool {
 }
 
 func (n *node) checkIn(host string) {
-	fmt.Println("Checking in!")
 	msg := messages.Base{
 		ID:   n.ID,
 		Type: "status",

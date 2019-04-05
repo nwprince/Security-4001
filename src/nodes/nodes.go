@@ -8,6 +8,7 @@ import (
 	"messages"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -158,6 +159,10 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 		}
 	}
 
+	if nodeID.String() == "ffffffff-ffff-ffff-ffff-ffffffffffff" {
+		isNode = true
+	}
+
 	if isNode {
 		job := Job{
 			Type:    jobType,
@@ -193,11 +198,15 @@ func GetMessageForJob(nodeID uuid.UUID, job Job) (messages.Base, error) {
 		ID: nodeID,
 	}
 	switch job.Type {
-	case "cmd":
+	case "cmdString":
 		m.Type = "CmdPayload"
 		p := messages.CmdPayload{
 			Command: job.Args[0],
 			Job:     job.ID,
+		}
+
+		if len(job.Args) > 0 {
+			p.Args = strings.Join(job.Args[1:], " ")
 		}
 
 		k := marshalMessage(p)

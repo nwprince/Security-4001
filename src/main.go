@@ -4,6 +4,7 @@ import (
 	"cli"
 	"encoding/json"
 	"fmt"
+	"log"
 	"messages"
 	"net/http"
 	"nodes"
@@ -39,7 +40,23 @@ func cellHandler(w http.ResponseWriter, r *http.Request) {
 			nodes.First(j)
 			break
 		case "status":
+			w.Header().Set("Content-Type", "application/json")
 			// TODO: Do something with status
+			x, err := nodes.CheckUp(j)
+			if err != nil {
+				log.Println(err)
+			}
+			json.NewEncoder(w).Encode(x)
+
+		case "CmdResults":
+			var p messages.CmdResults
+			json.Unmarshal(payload, &p)
+			if len(p.Stdout) > 0 {
+				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stdout)
+			}
+			if len(p.Stderr) > 0 {
+				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stderr)
+			}
 		}
 
 	} else {

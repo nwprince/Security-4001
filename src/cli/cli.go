@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	uuid "github.com/satori/go.uuid"
@@ -70,7 +71,7 @@ func interact() {
 
 }
 
-func selectNode() uuid.UUID {
+func selectNode(blast bool) uuid.UUID {
 	var opts []uuid.UUID
 	var stringOpts []string
 
@@ -78,13 +79,18 @@ func selectNode() uuid.UUID {
 		opts = append(opts, k)
 		stringOpts = append(stringOpts, k.String())
 	}
+	if blast {
+		u, _ := uuid.FromString("ffffffff-ffff-ffff-ffff-ffffffffffff")
+		opts = append(opts, u)
+		stringOpts = append(stringOpts, "ffffffff-ffff-ffff-ffff-ffffffffffff")
+	}
 	i := prompt.Choose("Select a device to interact with: ", stringOpts)
 	return opts[i]
 }
 
 func sendCmd() {
-	node := selectNode()
+	node := selectNode(true)
 	cmd := readInput("Please enter your command: ")
-	nodes.AddJob(node, "cmdString", []string{cmd})
+	nodes.AddJob(node, "cmdString", strings.Fields(cmd))
 
 }
