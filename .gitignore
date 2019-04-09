@@ -16,3 +16,4 @@ pkg/
 src/data/*/*
 src/github.com/*/*
 src/golang.org/*/*
+src/.vscode/*

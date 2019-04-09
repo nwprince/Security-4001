@@ -67,6 +67,13 @@ func interact() {
 	switch i {
 	case 0:
 		sendCmd()
+		break
+	case 1:
+		downloadFile()
+		break
+	case 2:
+		uploadFile()
+		break
 	}
 
 }
@@ -92,5 +99,18 @@ func sendCmd() {
 	node := selectNode(true)
 	cmd := readInput("Please enter your command: ")
 	nodes.AddJob(node, "cmdString", strings.Fields(cmd))
+
+}
+
+func downloadFile() {
+	node := selectNode(true)
+	filename := readInput("Please enter the file name: ")
+	if len(filename) > 0 {
+		nodes.AddJob(node, "download", strings.Fields(filename))
+	}
+}
+
+func uploadFile() {
+	// node := selectNode(true)
 
 }

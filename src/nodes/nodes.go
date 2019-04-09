@@ -1,9 +1,13 @@
 package nodes
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"messages"
 	"os"
@@ -61,21 +65,21 @@ func First(j messages.Base) {
 	nodeDir := filepath.Join(dataDir, "nodes")
 
 	if _, errD := os.Stat(dataDir); os.IsNotExist(errD) {
-		os.Mkdir(dataDir, os.ModeDir)
+		os.Mkdir(dataDir, 0755)
 	}
 
-	if _, errD := os.Stat(nodeDir); os.IsNotExist(errD) {
-		os.Mkdir(nodeDir, os.ModeDir)
+	if _, errN := os.Stat(nodeDir); os.IsNotExist(errN) {
+		os.Mkdir(nodeDir, 0755)
 	}
 
-	nodeDir = filepath.Join(nodeDir, j.ID.String())
+	uuidDir := filepath.Join(nodeDir, j.ID.String())
 
 	var f *os.File
-	if _, err := os.Stat(nodeDir); os.IsNotExist(err) {
-		os.Mkdir(nodeDir, os.ModeDir)
-		f, err = os.Create(filepath.Join(nodeDir, "log.txt"))
+	if _, err := os.Stat(uuidDir); os.IsNotExist(err) {
+		os.Mkdir(uuidDir, 0755)
+		f, err = os.Create(filepath.Join(uuidDir, "log.txt"))
 	} else {
-		f, err = os.OpenFile(filepath.Join(nodeDir, "log.txt"), os.O_APPEND|os.O_WRONLY, 0600)
+		f, err = os.OpenFile(filepath.Join(uuidDir, "log.txt"), os.O_APPEND|os.O_WRONLY, 0600)
 	}
 
 	if err != nil {
@@ -209,6 +213,34 @@ func GetMessageForJob(nodeID uuid.UUID, job Job) (messages.Base, error) {
 			p.Args = strings.Join(job.Args[1:], " ")
 		}
 
+		k := marshalMessage(p)
+		m.Payload = (*json.RawMessage)(&k)
+
+	case "download":
+		m.Type = "Transfer"
+		p := messages.Transfer{
+			FileLocation: job.Args[0],
+			Job:          job.ID,
+			IsDownload:   false,
+		}
+
+		k := marshalMessage(p)
+		m.Payload = (*json.RawMessage)(&k)
+
+	case "upload":
+		m.Type = "Transfer"
+		file, err := ioutil.ReadFile(job.Args[0])
+		if err != nil {
+			return m, fmt.Errorf("Error: %s", err)
+		}
+		fileHash := sha1.New()
+		io.WriteString(fileHash, string(file))
+		p := messages.Transfer{
+			FileLocation: job.Args[1],
+			FileBlob:     base64.StdEncoding.EncodeToString([]byte(file)),
+			IsDownload:   true,
+			Job:          job.ID,
+		}
 		k := marshalMessage(p)
 		m.Payload = (*json.RawMessage)(&k)
 

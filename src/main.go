@@ -2,12 +2,17 @@ package main
 
 import (
 	"cli"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"messages"
 	"net/http"
 	"nodes"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 func init() {
@@ -23,8 +28,6 @@ func main() {
 
 func cellHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	fmt.Println("endpoint hit")
 
 	if r.Method == "POST" {
 		var payload json.RawMessage
@@ -51,12 +54,28 @@ func cellHandler(w http.ResponseWriter, r *http.Request) {
 		case "CmdResults":
 			var p messages.CmdResults
 			json.Unmarshal(payload, &p)
+			fmt.Println(p)
 			if len(p.Stdout) > 0 {
 				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stdout)
 			}
 			if len(p.Stderr) > 0 {
 				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stderr)
 			}
+
+		case "TransferResults":
+			var p messages.Transfer
+			json.Unmarshal(payload, &p)
+			if p.IsDownload {
+				str, _ := base64.StdEncoding.DecodeString(p.FileBlob)
+				filename := strings.Split(p.FileLocation, "/")
+				dir, _ := os.Getwd()
+				path := filepath.Join(dir, "data", "nodes", j.ID.String(), filename[len(filename)-1])
+				err := ioutil.WriteFile(path, str, 0644)
+				if err != nil {
+					panic(err)
+				}
+			}
+
 		}
 
 	} else {

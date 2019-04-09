@@ -11,7 +11,7 @@ type Base struct {
 	Payload interface{} `json:"payload,omitempty"`
 }
 
-type FileTransfer struct {
+type Transfer struct {
 	FileLocation string `json:"dest"`
 	FileBlob     string `json:"blob"`
 	IsDownload   bool   `json:"download"`
