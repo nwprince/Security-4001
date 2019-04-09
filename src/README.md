@@ -15,7 +15,7 @@
 Go is pythonic c++, most of the basic stuff is already implementated. The code for the Node is in node.go and that is consumed by both the server and cmd/ccnode/main.go. 
 
 <h2>Go Tips</h2>
-* fmt.Println("string") is the same as cout<<"string"<<endl; in c++
+* fmt.Println("string") is the same as cout with an endl in cpp
 * All json is serialized, this means it's converted to binary before being sent. You'll need a marshaller and unmarsheller. Try to avoid in the beginning or message me for help. All json responses can be found in messages/messages.go
 * Go is strongly-typed. Everything needs a type: int, int8, string, struct, bool, etc. 
 * Classes do not explicitly exist. A class in Go is a package. So package main or package messages at the top of the file designate what package it belongs to. All variables within the package belong to that class essentially. 
