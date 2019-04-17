@@ -97,20 +97,26 @@ func selectNode(blast bool) uuid.UUID {
 
 func sendCmd() {
 	node := selectNode(true)
-	cmd := readInput("Please enter your command: ")
+	cmd := readInput("Please enter your command (absolute path): ")
 	nodes.AddJob(node, "cmdString", strings.Fields(cmd))
 
 }
 
 func downloadFile() {
 	node := selectNode(true)
-	filename := readInput("Please enter the file name: ")
+	filename := readInput("Please enter the file name (absolute path): ")
 	if len(filename) > 0 {
 		nodes.AddJob(node, "download", strings.Fields(filename))
 	}
 }
 
 func uploadFile() {
-	// node := selectNode(true)
+	node := selectNode(true)
+	filename := readInput("Please enter the file name (absolute path): ")
+	remotepath := readInput("Remote File Path (absolute path): ")
+	args := []string{strings.Fields(filename)[0], strings.Fields(remotepath)[0]}
+	if len(filename) > 0 {
+		nodes.AddJob(node, "upload", args)
+	}
 
 }

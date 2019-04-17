@@ -20,6 +20,8 @@
 
 * C2 can steal files from a node (all nodes is untested)
 
+* C2 can upload files to a node
+
 <h2>Go Tips</h2>
 
 Go is pythonic c++, most of the basic stuff is already implementated. The code for the Node is in node.go and that is consumed by both the server and cmd/ccnode/main.go.

@@ -54,12 +54,12 @@ func cellHandler(w http.ResponseWriter, r *http.Request) {
 		case "CmdResults":
 			var p messages.CmdResults
 			json.Unmarshal(payload, &p)
-			fmt.Println(p)
+			fmt.Println("")
 			if len(p.Stdout) > 0 {
 				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stdout)
 			}
 			if len(p.Stderr) > 0 {
-				fmt.Println(j.ID.String() + " results: ~> SUCCESS\r\n" + p.Stderr)
+				fmt.Println(j.ID.String() + " results: ~> ERROR\r\n" + p.Stderr)
 			}
 
 		case "TransferResults":
