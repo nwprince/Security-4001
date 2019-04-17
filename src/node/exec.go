@@ -13,7 +13,7 @@ func ExecuteCommand(name string, arg string) (stdout string, stderr string) {
 
 	argS, err := shellwords.Parse(arg)
 	if err != nil {
-		return "", fmt.Sprintf("there was an err with args: %2\r\n%s", arg, err.Error())
+		return "", fmt.Sprintf("there was an err with args: %s\r\n%s", arg, err.Error())
 	}
 
 	cmd = exec.Command(name, argS...)
