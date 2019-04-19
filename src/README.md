@@ -8,7 +8,7 @@
 
 * Run 'make ccnode-linux' to build the default node. This can be used for testing in a separate terminal.
 
-* Run 'make ccnode-android' to build an android emulator compatible version, but this isn't necessary for testing because if it compiles it'll work. Do all testing in the linux binary.
+* Run 'make ccnode-aarch64' to build an android arm64 compatible version(most phones), but this isn't necessary for testing because if it compiles it'll work. Do all testing in the linux binary.
 
 <h2>What's done now</h2>
 

@@ -65,18 +65,18 @@ func First(j messages.Base) {
 	nodeDir := filepath.Join(dataDir, "nodes")
 
 	if _, errD := os.Stat(dataDir); os.IsNotExist(errD) {
-		os.Mkdir(dataDir, 0755)
+		os.Mkdir(dataDir, 0777)
 	}
 
 	if _, errN := os.Stat(nodeDir); os.IsNotExist(errN) {
-		os.Mkdir(nodeDir, 0755)
+		os.Mkdir(nodeDir, 0777)
 	}
 
 	uuidDir := filepath.Join(nodeDir, j.ID.String())
 
 	var f *os.File
 	if _, err := os.Stat(uuidDir); os.IsNotExist(err) {
-		os.Mkdir(uuidDir, 0755)
+		os.Mkdir(uuidDir, 0777)
 		f, err = os.Create(filepath.Join(uuidDir, "log.txt"))
 	} else {
 		f, err = os.OpenFile(filepath.Join(uuidDir, "log.txt"), os.O_APPEND|os.O_WRONLY, 0600)
