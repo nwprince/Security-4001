@@ -9,11 +9,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"messages"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/nwprince/Security-4001/messages"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -179,7 +180,7 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 
 			for k := range Nodes {
 				s := Nodes[k].channel
-				id, _ := uuid.NewV4()
+				id := uuid.NewV4()
 				job.ID = id.String()
 				s <- []Job{job}
 				Nodes[k].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
@@ -187,7 +188,7 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 			return job.ID, nil
 		}
 
-		id, _ := uuid.NewV4()
+		id := uuid.NewV4()
 		job.ID = id.String()
 		s := Nodes[nodeID].channel
 		s <- []Job{job}

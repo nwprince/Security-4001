@@ -1,18 +1,19 @@
 package main
 
 import (
-	"cli"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"messages"
 	"net/http"
-	"nodes"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/nwprince/Security-4001/cli"
+	"github.com/nwprince/Security-4001/messages"
+	"github.com/nwprince/Security-4001/nodes"
 )
 
 func init() {

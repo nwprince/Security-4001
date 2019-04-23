@@ -1,8 +1,9 @@
 package main
 
 import (
-	"node"
 	"time"
+
+	"github.com/nwprince/Security-4001/node"
 )
 
 func main() {

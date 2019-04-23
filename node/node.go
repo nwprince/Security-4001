@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"messages"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +16,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/nwprince/Security-4001/messages"
 
 	uuid "github.com/satori/go.uuid"
 )

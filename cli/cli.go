@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/nwprince/Security-4001/nodes"
 	"github.com/olekukonko/tablewriter"
 	uuid "github.com/satori/go.uuid"
-	"github.com/segmentio/go-prompt"
-
-	"nodes"
 )
 
 var mainOpts = []string{
@@ -24,10 +23,60 @@ var interactOpts = []string{
 	"Upload file to device",
 }
 
+func createString(prompt string, args ...interface{}) string {
+	var s string
+	fmt.Printf(prompt+": ", args...)
+	fmt.Scanln(&s)
+	return s
+}
+
+func choose(prompt string, list []string) int {
+	fmt.Println()
+	for i, val := range list {
+		fmt.Printf("  %d) %s\n", i+1, val)
+	}
+
+	fmt.Println()
+	i := -1
+
+	for {
+		s := createString(prompt)
+
+		// index
+		n, err := strconv.Atoi(s)
+		if err == nil {
+			if n > 0 && n <= len(list) {
+				i = n - 1
+				break
+			} else {
+				continue
+			}
+		}
+
+		// value
+		i = indexOf(s, list)
+		if i != -1 {
+			break
+		}
+	}
+
+	return i
+}
+
+func indexOf(s string, list []string) int {
+	for i, val := range list {
+		if val == s {
+			return i
+		}
+	}
+	return -1
+}
+
 // Shell will create an interactive console
 func Shell() {
+
 	for {
-		i := prompt.Choose("Choose an option:", mainOpts)
+		i := choose("Choose an option:", mainOpts)
 
 		switch i {
 		case 0:
@@ -62,7 +111,7 @@ func readInput(inputMsg string) string {
 
 func interact() {
 	listNodes()
-	i := prompt.Choose("Choose an option:", interactOpts)
+	i := choose("Choose an option:", interactOpts)
 
 	switch i {
 	case 0:
@@ -91,7 +140,7 @@ func selectNode(blast bool) uuid.UUID {
 		opts = append(opts, u)
 		stringOpts = append(stringOpts, "ffffffff-ffff-ffff-ffff-ffffffffffff")
 	}
-	i := prompt.Choose("Select a device to interact with: ", stringOpts)
+	i := choose("Select a device to interact with: ", stringOpts)
 	return opts[i]
 }
 
