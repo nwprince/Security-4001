@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"bufio"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
@@ -45,6 +46,13 @@ type Job struct {
 	Status  string
 	Args    []string
 	Created time.Time
+}
+
+var scriptJobs = []string{
+	"touch exec.sh",
+	"chmod +x exec.sh",
+	"./exec.sh",
+	"rm exec.sh",
 }
 
 // First handles the first connection that is made
@@ -158,6 +166,8 @@ func GetStatus(id uuid.UUID) string {
 
 func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) {
 	isNode := false
+	broadcast := false
+	isScript := false
 	for k := range Nodes {
 		if Nodes[k].ID == nodeID {
 			isNode = true
@@ -166,6 +176,11 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 
 	if nodeID.String() == "ffffffff-ffff-ffff-ffff-ffffffffffff" {
 		isNode = true
+		broadcast = true
+	}
+
+	if jobType == "script" {
+		isScript = true
 	}
 
 	if isNode {
@@ -175,27 +190,93 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 			Args:    jobArgs,
 			Created: time.Now(),
 		}
-
-		if nodeID.String() == "ffffffff-ffff-ffff-ffff-ffffffffffff" {
-
-			for k := range Nodes {
-				s := Nodes[k].channel
-				id := uuid.NewV4()
-				job.ID = id.String()
-				s <- []Job{job}
-				Nodes[k].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+		if isScript {
+			if _, errD := os.Stat(jobArgs[0]); os.IsNotExist(errD) {
+				fmt.Println("Error: this file does not exist")
+				return "", errors.New("No such file")
 			}
-			return job.ID, nil
+
+			file, err := os.Open(jobArgs[0])
+			if err != nil {
+				return "", err
+			}
+			defer file.Close()
+
+			firstTask := []string{scriptJobs[0]}
+			secondTask := []string{scriptJobs[1]}
+			thirdTask := []string{scriptJobs[2]}
+			fourthTask := []string{scriptJobs[3]}
+
+			job.Args = firstTask
+			job.Created = time.Now()
+			if broadcast {
+				pushJob(&job, true, nodeID)
+			} else {
+				pushJob(&job, false, nodeID)
+			}
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				job.Args = []string{scanner.Text()}
+				job.Created = time.Now()
+				if broadcast {
+					pushJob(&job, true, nodeID)
+				} else {
+					pushJob(&job, false, nodeID)
+				}
+			}
+
+			job.Args = secondTask
+			job.Created = time.Now()
+			if broadcast {
+				pushJob(&job, true, nodeID)
+			} else {
+				pushJob(&job, false, nodeID)
+			}
+
+			job.Args = thirdTask
+			job.Created = time.Now()
+			if broadcast {
+				pushJob(&job, true, nodeID)
+			} else {
+				pushJob(&job, false, nodeID)
+			}
+
+			job.Args = fourthTask
+			job.Created = time.Now()
+			if broadcast {
+				pushJob(&job, true, nodeID)
+			} else {
+				pushJob(&job, false, nodeID)
+			}
+			return "", nil
 		}
 
-		id := uuid.NewV4()
-		job.ID = id.String()
-		s := Nodes[nodeID].channel
-		s <- []Job{job}
-		Nodes[nodeID].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+		if nodeID.String() == "ffffffff-ffff-ffff-ffff-ffffffffffff" {
+			pushJob(&job, true, nodeID)
+			return job.ID, nil
+		}
+		pushJob(&job, false, nodeID)
 		return job.ID, nil
 	}
 	return "", errors.New("bad id")
+}
+
+func pushJob(job *Job, all bool, nodeID uuid.UUID) {
+	if all {
+		for k := range Nodes {
+			s := Nodes[k].channel
+			id := uuid.NewV4()
+			job.ID = id.String()
+			s <- []Job{*job}
+			Nodes[k].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+		}
+	} else {
+		id := uuid.NewV4()
+		job.ID = id.String()
+		s := Nodes[nodeID].channel
+		s <- []Job{*job}
+		Nodes[nodeID].log.WriteString(fmt.Sprintf("[%s]Created job Type:%s, ID:%s, Status:%s, "+"Args: %s \r\n", time.Now(), job.Type, job.ID, job.Status, job.Args))
+	}
 }
 
 func GetMessageForJob(nodeID uuid.UUID, job Job) (messages.Base, error) {
@@ -242,6 +323,19 @@ func GetMessageForJob(nodeID uuid.UUID, job Job) (messages.Base, error) {
 			IsDownload:   true,
 			Job:          job.ID,
 		}
+		k := marshalMessage(p)
+		m.Payload = (*json.RawMessage)(&k)
+
+	case "script":
+		m.Type = "Script"
+		p := messages.CmdPayload{
+			Command: job.Args[0],
+			Job:     job.ID,
+		}
+		if len(job.Args) > 0 {
+			p.Args = strings.Join(job.Args[1:], " ")
+		}
+
 		k := marshalMessage(p)
 		m.Payload = (*json.RawMessage)(&k)
 

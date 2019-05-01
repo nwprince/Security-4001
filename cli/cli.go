@@ -21,6 +21,7 @@ var interactOpts = []string{
 	"Send cmd to device",
 	"Download file from device",
 	"Upload file to device",
+	"Execute Script",
 }
 
 func createString(prompt string, args ...interface{}) string {
@@ -123,8 +124,10 @@ func interact() {
 	case 2:
 		uploadFile()
 		break
+	case 3:
+		script()
+		break
 	}
-
 }
 
 func selectNode(blast bool) uuid.UUID {
@@ -168,4 +171,12 @@ func uploadFile() {
 		nodes.AddJob(node, "upload", args)
 	}
 
+}
+
+func script() {
+	node := selectNode(true)
+	filename := readInput("Enter the name of the script (absolute path): ")
+	if len(filename) > 0 {
+		nodes.AddJob(node, "script", strings.Fields(filename))
+	}
 }
