@@ -43,10 +43,8 @@ type node struct {
 }
 
 func New() node {
-	u, err := uuid.NewV4()
-	if err != nil {
-		log.Panic(err)
-	}
+	u := uuid.NewV4()
+
 	n := node{
 		ID:           u,
 		Platform:     runtime.GOOS,
