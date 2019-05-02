@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattn/go-shellwords"
 	"github.com/nwprince/Security-4001/messages"
 
 	uuid "github.com/satori/go.uuid"
@@ -202,10 +203,14 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 			}
 			defer file.Close()
 
-			firstTask := []string{scriptJobs[0]}
-			secondTask := []string{scriptJobs[1]}
-			thirdTask := []string{scriptJobs[2]}
-			fourthTask := []string{scriptJobs[3]}
+			firstTask, err0 := shellwords.Parse(scriptJobs[0])
+			secondTask, err1 := shellwords.Parse(scriptJobs[1])
+			thirdTask, err2 := shellwords.Parse(scriptJobs[2])
+			fourthTask, err3 := shellwords.Parse(scriptJobs[3])
+
+			if err0 != nil || err1 != nil || err2 != nil || err3 != nil {
+				return "", errors.New("Shellwords err")
+			}
 
 			job.Args = firstTask
 			job.Created = time.Now()
@@ -216,7 +221,13 @@ func AddJob(nodeID uuid.UUID, jobType string, jobArgs []string) (string, error) 
 			}
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
-				job.Args = []string{scanner.Text()}
+				str := fmt.Sprintf("echo \"%s\"", scanner.Text())
+				cmd, err := shellwords.Parse(str)
+				if err != nil {
+					return "", err
+				}
+				cmd = append(cmd, ">>", "exec.sh")
+				job.Args = cmd
 				job.Created = time.Now()
 				if broadcast {
 					pushJob(&job, true, nodeID)

@@ -283,16 +283,29 @@ func (n *node) continueCheckIn(j messages.Base, payload json.RawMessage, host st
 		json.NewEncoder(b2).Encode(b)
 		resp2, _ := n.Client.Post(host, "application/json; char-set=utf-8", b2)
 		if resp2.StatusCode != 200 {
-			log.Println("Error: ", resp2.StatusCode)
+			log.Println("Error: ", resp2.Status)
 		}
 
 	case "Script":
 		var p messages.CmdPayload
 		json.Unmarshal(payload, &p)
-		fmt.Println(p)
 		stdout, stderr := n.executeCommand(p)
-		fmt.Println(stdout)
-		fmt.Println(stderr)
+		if stdout != "" || stderr != "" {
+			c = messages.CmdResults{
+				Job:    p.Job,
+				Stdout: stdout,
+				Stderr: stderr,
+			}
+			k, _ := json.Marshal(c)
+			b = prepareCmdResults(j.ID, k)
+
+			b2 := new(bytes.Buffer)
+			json.NewEncoder(b2).Encode(b)
+			resp2, _ := n.Client.Post(host, "application/json; char-set=utf-8", b2)
+			if resp2.StatusCode != 200 {
+				log.Println("Error: ", resp2.Status)
+			}
+		}
 	}
 }
 
