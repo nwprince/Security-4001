@@ -1,10 +1,12 @@
 <h1>Security Project</h1>
 
+* go modules support is on, before attempting to run, please run 'go get'
+
 * Yo, just run 'go run main.go' to run the server
 
 * Run 'go run cmd/ccnode/.go' to run the node
 
-* Run 'make' to build both the server and the node
+* Run 'make' to build both the server and the node (all platforms)
 
 * Run 'make ccnode-linux' to build the default node. This can be used for testing in a separate terminal.
 
@@ -21,6 +23,8 @@
 * C2 can steal files from a node (all nodes is untested)
 
 * C2 can upload files to a node
+
+* C2 can branch scripts and pass them line by line. The script will the be rebuilt and executed on the device
 
 <h2>Go Tips</h2>
 
