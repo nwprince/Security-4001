@@ -6,6 +6,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/gdamore/tcell v1.1.1 // indirect
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
+	github.com/jondot/goweight v1.0.4 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.2 // indirect
 	github.com/manifoldco/promptui v0.3.2
 	github.com/mattn/go-shellwords v1.0.5
